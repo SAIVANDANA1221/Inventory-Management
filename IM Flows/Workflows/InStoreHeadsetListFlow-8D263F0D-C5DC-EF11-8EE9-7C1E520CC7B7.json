@@ -1,0 +1,145 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created_or_modified": {
+          "recurrence": {
+            "frequency": "Minute",
+            "interval": 5
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "8fafe4ea-4957-4448-b49d-9a203c943606"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "connectionName": "shared_sharepointonline",
+              "operationId": "GetOnUpdatedItems"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Condition": {
+          "actions": {
+            "Create_item": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                  "table": "cb2379ea-1f72-4192-aeb2-91572d7c215e",
+                  "item/field_1": "@triggerBody()?['field_1']",
+                  "item/field_2": "@triggerBody()?['field_2']",
+                  "item/PurchaseDate": "@triggerBody()?['PurchaseDate']",
+                  "item/Brand": "@triggerBody()?['Brand']",
+                  "item/Title": "@triggerBody()?['Title']",
+                  "item/field_4/Value": "@triggerBody()?['field_4/Value']",
+                  "item/field_5": "@triggerBody()?['field_5']",
+                  "item/field_6": "@triggerBody()?['field_6']",
+                  "item/field_7/Value": "Yes",
+                  "item/field_8": "@triggerBody()?['field_8']",
+                  "item/Previousowner": "@triggerBody()?['Previousowner']"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                  "connectionName": "shared_sharepointonline",
+                  "operationId": "PostItem"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {},
+          "else": {
+            "actions": {
+              "Get_items": {
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "parameters": {
+                    "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                    "table": "cb2379ea-1f72-4192-aeb2-91572d7c215e",
+                    "$filter": "Title eq '@{triggerBody()?['Title']}'"
+                  },
+                  "host": {
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                    "connectionName": "shared_sharepointonline",
+                    "operationId": "GetItems"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              },
+              "For_each": {
+                "foreach": "@outputs('Get_items')?['body/value']",
+                "actions": {
+                  "Delete_item": {
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                        "table": "cb2379ea-1f72-4192-aeb2-91572d7c215e",
+                        "id": "@item()?['ID']"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                        "connectionName": "shared_sharepointonline",
+                        "operationId": "DeleteItem"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Get_items": [
+                    "Succeeded"
+                  ]
+                },
+                "type": "Foreach"
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@triggerBody()?['field_7/Value']",
+                  "Yes"
+                ]
+              }
+            ]
+          },
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

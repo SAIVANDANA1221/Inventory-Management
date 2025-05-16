@@ -1,0 +1,143 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_06ce8"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created": {
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "3340c09c-95e9-4a8f-9742-7243030f69f4"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetOnNewItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "8fafe4ea-4957-4448-b49d-9a203c943606"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Get_items": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "134d77c7-4f54-4674-8635-f1ff43ab34d7"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "8fafe4ea-4957-4448-b49d-9a203c943606",
+              "$filter": "Title eq null"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('Get_items')?['body/value']",
+          "actions": {
+            "Send_an_email_(V2)": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "d200ebaa-6570-417f-897d-2be5516f9051"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_office365_1",
+                  "operationId": "SendEmailV2",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                },
+                "parameters": {
+                  "emailMessage/To": "Gaurav.Sharma@nmrk.com;Saivandana.Unukonda@nmrk.com",
+                  "emailMessage/Subject": "Headset Inventory Purchase Details",
+                  "emailMessage/Body": "<style>\n  table {\n    width: 100%;\n    border-collapse: collapse;\n  }\n  table, th, td {\n    border: 1px solid black;\n  }\n  th, td {\n    padding: 10px;\n    text-align: left;\n  }\n</style>\n\n<p>Hi IT Team,</p>\n\n<p>We would like to inform you that the following purchase details for the headset inventory have been recorded:</p>\n\n<table cellpadding=\"5\" cellspacing=\"0\">\n  <tbody>\n    <tr>\n      <th>Purchase Date</th>\n      <td>@{item()?['PurchaseDate']}</td>\n    </tr>\n    <tr>\n      <th>Invoice Number</th>\n      <td>@{item()?['field_2']}</td>\n    </tr>\n    <tr>\n      <th>Vendor Name</th>\n      <td>@{item()?['field_1']}</td>\n    </tr>\n    <tr>\n      <th>Brand</th>\n      <td>@{item()?['Brand']}</td>\n    </tr>\n    <tr>\n      <th>Model</th>\n      <td>@{item()?['field_4/Value']}</td>\n    </tr>\n<tr><th>Quantity</th>\n      <td>@{variables('count')}</td>\n    </tr>\n\n    <!-- Serial Numbers Section (Dynamic) -->\n    <tr>\n      <th>Serial Numbers</th>\n      <td>\n        @{if(empty(item()?['MultipleSerialNumbers']), \n           'No serial numbers available',\n           replace(item()?['MultipleSerialNumbers'], ',', '<br>'))}\n      </td>\n    </tr>\n  </tbody>\n</table>\n\n<p>Please ensure this information is updated in your records. Let us know if you need any additional details.</p>\n\n",
+                  "emailMessage/Importance": "Normal"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3d701ada-e455-4ae3-ba8b-37874822e55e"
+          },
+          "type": "Foreach"
+        },
+        "Initialize_variable": {
+          "runAfter": {
+            "Get_items": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "212bcbf3-73e3-4f0a-9240-9e4c571cdadf"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "count",
+                "type": "integer",
+                "value": "@length(split(triggerBody()?['MultipleSerialNumbers'],';'))"
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

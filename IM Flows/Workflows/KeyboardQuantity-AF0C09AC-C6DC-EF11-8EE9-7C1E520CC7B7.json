@@ -1,0 +1,203 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created": {
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "5e0e71c1-2b41-478f-92d9-d65cdfca7efb"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetOnNewItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "dc22bf9d-ee71-4b8e-982c-378718683de3"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Condition": {
+          "actions": {
+            "Do_until_1": {
+              "actions": {
+                "Create_item": {
+                  "runAfter": {},
+                  "metadata": {
+                    "operationMetadataId": "e3021b6e-154d-432c-b91c-fcd346e9bb29"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "host": {
+                      "connectionName": "shared_sharepointonline_1",
+                      "operationId": "PostItem",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                    },
+                    "parameters": {
+                      "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                      "table": "dc22bf9d-ee71-4b8e-982c-378718683de3",
+                      "item/field_1": "@triggerBody()?['field_1']",
+                      "item/field_2": "@triggerBody()?['field_2']",
+                      "item/PurchaseDate": "@triggerBody()?['PurchaseDate']",
+                      "item/Brand": "@triggerBody()?['Brand']",
+                      "item/field_4/Value": "@triggerBody()?['field_4/Value']",
+                      "item/field_7/Value": "Yes"
+                    },
+                    "authentication": "@parameters('$authentication')"
+                  }
+                },
+                "Increment_variable": {
+                  "runAfter": {
+                    "Create_item": [
+                      "Succeeded"
+                    ]
+                  },
+                  "metadata": {
+                    "operationMetadataId": "d9989864-c86e-44a9-a655-ed855eccb17e"
+                  },
+                  "type": "IncrementVariable",
+                  "inputs": {
+                    "name": "Counter",
+                    "value": 1
+                  }
+                }
+              },
+              "runAfter": {},
+              "expression": "@equals(variables('Counter'),variables('Quantity'))",
+              "limit": {
+                "count": 60,
+                "timeout": "PT1H"
+              },
+              "metadata": {
+                "operationMetadataId": "3f58aeaa-43ea-449f-a9f3-e2a354380379"
+              },
+              "type": "Until"
+            },
+            "Update_item": {
+              "runAfter": {
+                "Do_until_1": [
+                  "Succeeded"
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "4b78690c-0ded-4b39-ad1d-bcea4e6ac320"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline_1",
+                  "operationId": "PatchItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                  "table": "dc22bf9d-ee71-4b8e-982c-378718683de3",
+                  "id": "@triggerBody()?['ID']",
+                  "item/field_1": "@triggerBody()?['field_1']",
+                  "item/field_2": "@triggerBody()?['field_2']",
+                  "item/PurchaseDate": "@triggerBody()?['PurchaseDate']",
+                  "item/Brand": "@triggerBody()?['Brand']",
+                  "item/field_4/Value": "@triggerBody()?['field_4/Value']",
+                  "item/field_6": "@triggerBody()?['field_6']",
+                  "item/field_7/Value": "Yes"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_3": [
+              "Succeeded"
+            ]
+          },
+          "expression": {
+            "and": [
+              {
+                "greater": [
+                  "@int(triggerBody()?['Quantity'])",
+                  0
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b41e94fd-f25b-4df8-b462-f37da2dd1de1"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_2": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "c8b731ca-0e7b-4e8c-a327-67717bd53c8c"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Quantity",
+                "type": "integer",
+                "value": "@int(triggerBody()?['Quantity'])"
+              }
+            ]
+          }
+        },
+        "Initialize_variable_3": {
+          "runAfter": {
+            "Initialize_variable_2": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9057814a-9462-48b6-b7d3-f18e6d0c2525"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Counter",
+                "type": "integer",
+                "value": 1
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

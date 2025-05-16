@@ -1,0 +1,157 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_06ce8"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created": {
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "932cae65-2bec-4dae-a8a2-2ba9239ae59f"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetOnNewItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "dc22bf9d-ee71-4b8e-982c-378718683de3"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Condition": {
+          "actions": {},
+          "runAfter": {
+            "Initialize_variable_2": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Set_variable": {
+                "runAfter": {
+                  "Compose": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "38b8210a-2976-43fb-9255-f2c246956659"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "Quantity",
+                  "value": "@int(outputs('Compose'))"
+                }
+              },
+              "Compose": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "d8c52623-d2f9-4d7d-accc-3ddda4e54d70"
+                },
+                "type": "Compose",
+                "inputs": "@triggerBody()?['Quantity']"
+              },
+              "Send_an_email_(V2)_1": {
+                "runAfter": {
+                  "Set_variable": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "538fd275-825c-428c-99a3-31bb4b4157b5"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365_1",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "Gaurav.Sharma@nmrk.com;Saivandana.Unukonda@nmrk.com",
+                    "emailMessage/Subject": "Keyboard Inventory Purchase Details",
+                    "emailMessage/Body": "<style>\nbody {\nfont-family: Arial, sans-serif;\nfont-size: 16px;\nline-height: 1.6;\ncolor: #333;\nmargin: 20px;\n}\np {\nmargin: 10px 0;\n}\ntable {\nwidth: 100%;\nborder-collapse: collapse;\nmargin-top: 20px;\n}\ntable, th, td {\nborder: 1px solid #ddd;\n}\nth, td {\npadding: 12px;\ntext-align: left;\n}\nth {\nbackground-color: #f4f4f4;\n}\ntd {\nbackground-color: #fafafa;\n}\n</style>\n\n<p>Hi IT Team,</p>\n\n<p>The following purchase details have been successfully recorded and are provided below:</p>\n\n<table cellpadding=\"5\" cellspacing=\"0\">\n<tbody>\n<tr>\n<th>Purchase Date</th>\n<td>@{triggerBody()?['PurchaseDate']}</td>\n</tr>\n<tr>\n<th>Invoice Number</th>\n<td>@{triggerBody()?['field_2']}</td>\n</tr>\n<tr>\n<th>Vendor Name</th>\n<td>@{triggerBody()?['field_1']}</td>\n</tr>\n<tr>\n<th>Brand</th>\n<td>@{triggerBody()?['Brand']}</td>\n</tr>\n<tr>\n<th>Model</th>\n<td>@{triggerBody()?['field_4/Value']}</td>\n</tr>\n<tr>\n<th>Quantity</th>\n<td>@{variables('Quantity')}</td>\n</tr>\n\n\n</tbody>\n</table>\n\n<p>Please ensure this information is updated in your records accordingly. Let me know if you require any further details.</p>",
+                    "emailMessage/Importance": "Normal"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@triggerBody()?['Quantity']",
+                  ""
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b251bc4d-9685-4040-9f99-5daf9958f947"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_2": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "f031f8df-2cbe-497b-b390-405801f526c9"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Quantity",
+                "type": "integer"
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

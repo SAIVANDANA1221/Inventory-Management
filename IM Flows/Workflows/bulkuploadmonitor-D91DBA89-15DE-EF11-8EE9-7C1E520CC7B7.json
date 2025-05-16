@@ -1,0 +1,272 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      },
+      "shared_excelonlinebusiness_1": {
+        "runtimeSource": "invoker",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedexcelonlinebusiness_aa479"
+        },
+        "api": {
+          "name": "shared_excelonlinebusiness"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "undefined",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "manual": {
+          "metadata": {
+            "operationMetadataId": "fec131cd-a5db-4a25-be9a-f6f749f1308c"
+          },
+          "type": "Request",
+          "kind": "PowerAppV2",
+          "inputs": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "description": "Please select file or image",
+                  "title": "File content",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "contentBytes": {
+                      "type": "string",
+                      "format": "byte"
+                    }
+                  },
+                  "x-ms-content-hint": "FILE",
+                  "x-ms-dynamically-added": true
+                }
+              },
+              "required": [
+                "file"
+              ]
+            }
+          }
+        }
+      },
+      "actions": {
+        "Compose": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "fdf0a9a2-95e1-4147-b568-6080455d880c"
+          },
+          "type": "Compose",
+          "inputs": "@triggerBody()?['file']"
+        },
+        "Create_file": {
+          "runAfter": {
+            "Compose": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "9f253079-9ac7-4284-97bc-fc06ce2e5d15"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "CreateFile",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "folderPath": "/Excel Storage",
+              "name": "@triggerBody()?['file']?['name']",
+              "body": "@triggerBody()?['file']?['contentBytes']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "runtimeConfiguration": {
+            "contentTransfer": {
+              "transferMode": "Chunked"
+            }
+          }
+        },
+        "Respond_to_a_Power_App_or_flow": {
+          "runAfter": {
+            "Create_file_1": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "43834100-0938-4d74-ba0c-416c98ae51f6"
+          },
+          "type": "Response",
+          "kind": "PowerApp",
+          "inputs": {
+            "statusCode": 200,
+            "body": {
+              "response": "Data added Sucessfullyy!!"
+            },
+            "schema": {
+              "type": "object",
+              "properties": {
+                "response": {
+                  "title": "Response",
+                  "x-ms-dynamically-added": true,
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "List_rows_present_in_a_table": {
+          "runAfter": {
+            "Create_file": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1d838ee7-6143-429e-afa4-f85e78d8e4cf"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_excelonlinebusiness_1",
+              "operationId": "GetItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_excelonlinebusiness"
+            },
+            "parameters": {
+              "source": "groups/ec38c59a-a1cb-4a73-9725-50b8650a96a1",
+              "drive": "b!UinwNuYqJUmrhB3C6WJfcs6TuQFhWi9MqXGFuo6PvXvAKzxIJWzsTYR4NmtTqwgD",
+              "file": "@outputs('Create_file')?['body/Id']",
+              "table": "Table1",
+              "dateTimeFormat": "ISO 8601"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        },
+        "Apply_to_each": {
+          "foreach": "@outputs('List_rows_present_in_a_table')?['body/value']",
+          "actions": {
+            "Create_item": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "6605d1b1-a635-427b-aa8b-b597ed610d2b"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline_1",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                  "table": "10e5a098-c22e-4510-b210-01d1a098d423",
+                  "item/field_2": "@items('Apply_to_each')?['Invoice number']",
+                  "item/field_3": "@items('Apply_to_each')?['Vendor']",
+                  "item/field_4": "@items('Apply_to_each')?['MONITORS MODEL']",
+                  "item/PurchaseDate": "@items('Apply_to_each')?['Purchase Date']",
+                  "item/Title": "@items('Apply_to_each')?['MONITORS S/N']",
+                  "item/field_6": "@items('Apply_to_each')?['EMPLOYEE NAME']",
+                  "item/field_7/Value": "@items('Apply_to_each')?['IN STORE']",
+                  "item/field_8": "@items('Apply_to_each')?['REMARKS']",
+                  "item/Brand/Value": "@items('Apply_to_each')?['Brand']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {
+            "List_rows_present_in_a_table": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "96283f10-71c4-4ad9-b8a8-21b833a7ed89"
+          },
+          "type": "Foreach"
+        },
+        "Create_file_1": {
+          "runAfter": {
+            "Send_an_HTTP_request_to_SharePoint": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "a2e3d782-7ae9-4ac2-9503-ffd28cc380e7"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "CreateFile",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "folderPath": "/Excel Storage/Archive/Inventory/Monitor",
+              "name": "@triggerBody()?['file']?['name']",
+              "body": "@triggerBody()?['file']?['contentBytes']"
+            },
+            "authentication": "@parameters('$authentication')"
+          },
+          "runtimeConfiguration": {
+            "contentTransfer": {
+              "transferMode": "Chunked"
+            }
+          }
+        },
+        "Send_an_HTTP_request_to_SharePoint": {
+          "runAfter": {
+            "Apply_to_each": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "3197815a-a520-4625-ac36-15c6be7c1d35"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "HttpRequest",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "parameters/method": "POST",
+              "parameters/uri": "/_api/web/lists/getByTitle('Excel Storage')/items(@{outputs('Create_file')?['body/ItemId']})",
+              "parameters/headers": {
+                "accept": "application/json",
+                "X-HTTP-METHOD": "DELETE",
+                "IF-MATCH": "*",
+                "X-RequestDigest": "$(\"#__REQUESTDIGEST\").val()",
+                "Prefer": "bypass-shared-lock"
+              }
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      }
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

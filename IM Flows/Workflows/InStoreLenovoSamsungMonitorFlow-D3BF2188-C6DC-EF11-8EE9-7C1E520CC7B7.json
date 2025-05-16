@@ -1,0 +1,297 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_cf36e"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created_or_modified": {
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "e6b9b76c-7582-4f1f-8322-946a5b5d861a"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "10e5a098-c22e-4510-b210-01d1a098d423"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "GetOnUpdatedItems",
+              "connectionName": "shared_sharepointonline_1"
+            }
+          }
+        }
+      },
+      "actions": {
+        "Condition_1": {
+          "actions": {
+            "Condition": {
+              "actions": {
+                "Create_item": {
+                  "metadata": {
+                    "operationMetadataId": "bfe87758-b4bd-456d-8547-d1fc810e8b74"
+                  },
+                  "type": "OpenApiConnection",
+                  "inputs": {
+                    "parameters": {
+                      "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                      "table": "9bdcf1dd-4eee-4b56-82cc-72b67572a980",
+                      "item/field_2": "@triggerBody()?['field_2']",
+                      "item/field_3": "@triggerBody()?['field_3']",
+                      "item/field_4": "@triggerBody()?['field_4']",
+                      "item/PurchaseDate": "@triggerBody()?['PurchaseDate']",
+                      "item/Title": "@triggerBody()?['Title']",
+                      "item/field_7/Value": "Yes",
+                      "item/field_8": "@triggerBody()?['field_8']",
+                      "item/Brand/Value": "@triggerBody()?['Brand/Value']",
+                      "item/Previousowner": "@triggerBody()?['Previousowner']"
+                    },
+                    "host": {
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                      "operationId": "PostItem",
+                      "connectionName": "shared_sharepointonline_1"
+                    }
+                  }
+                }
+              },
+              "else": {
+                "actions": {
+                  "Get_items": {
+                    "metadata": {
+                      "operationMetadataId": "1fd01088-b847-44bf-8ac9-4f69eba08800"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "parameters": {
+                        "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                        "table": "9bdcf1dd-4eee-4b56-82cc-72b67572a980",
+                        "$filter": "Title eq '@{triggerBody()?['Title']}'"
+                      },
+                      "host": {
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                        "operationId": "GetItems",
+                        "connectionName": "shared_sharepointonline_1"
+                      }
+                    }
+                  },
+                  "For_each": {
+                    "foreach": "@outputs('Get_items')?['body/value']",
+                    "actions": {
+                      "Delete_item": {
+                        "metadata": {
+                          "operationMetadataId": "c992599d-1cd4-4c00-832c-695141c44def"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                            "table": "9bdcf1dd-4eee-4b56-82cc-72b67572a980",
+                            "id": "@item()?['ID']"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                            "operationId": "DeleteItem",
+                            "connectionName": "shared_sharepointonline_1"
+                          }
+                        }
+                      }
+                    },
+                    "runAfter": {
+                      "Get_items": [
+                        "Succeeded"
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "5f8b626e-718f-49bf-9537-13f5b28dde25"
+                    },
+                    "type": "Foreach"
+                  }
+                }
+              },
+              "expression": {
+                "and": [
+                  {
+                    "equals": [
+                      "@triggerBody()?['field_7/Value']",
+                      "Yes"
+                    ]
+                  }
+                ]
+              },
+              "metadata": {
+                "operationMetadataId": "74350026-6c86-4b93-b159-d959bdef7e2a"
+              },
+              "type": "If"
+            }
+          },
+          "runAfter": {},
+          "else": {
+            "actions": {
+              "Condition_2": {
+                "actions": {
+                  "Condition_3": {
+                    "actions": {
+                      "Create_item_1": {
+                        "metadata": {
+                          "operationMetadataId": "5b761b0c-0205-4660-a57b-e3f2ef6ca357"
+                        },
+                        "type": "OpenApiConnection",
+                        "inputs": {
+                          "parameters": {
+                            "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                            "table": "f8a47cd2-689e-4648-8ef8-139c57303c25",
+                            "item/field_2": "@triggerBody()?['field_2']",
+                            "item/field_3": "@triggerBody()?['field_3']",
+                            "item/field_4": "@triggerBody()?['field_4']",
+                            "item/PurchaseDate": "@triggerBody()?['PurchaseDate']",
+                            "item/Title": "@triggerBody()?['Title']",
+                            "item/field_7/Value": "Yes",
+                            "item/field_8": "@triggerBody()?['field_8']",
+                            "item/Previousowner": "@triggerBody()?['Previousowner']"
+                          },
+                          "host": {
+                            "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                            "operationId": "PostItem",
+                            "connectionName": "shared_sharepointonline_1"
+                          }
+                        }
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Get_items_1": {
+                          "metadata": {
+                            "operationMetadataId": "8122faa1-8d93-432c-b50c-6b192f5e3bbd"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "parameters": {
+                              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                              "table": "f8a47cd2-689e-4648-8ef8-139c57303c25",
+                              "$filter": "Title eq '@{triggerBody()?['Title']}'"
+                            },
+                            "host": {
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                              "operationId": "GetItems",
+                              "connectionName": "shared_sharepointonline_1"
+                            }
+                          }
+                        },
+                        "For_each_1": {
+                          "foreach": "@outputs('Get_items_1')?['body/value']",
+                          "actions": {
+                            "Delete_item_1": {
+                              "metadata": {
+                                "operationMetadataId": "6c12718b-84c0-4b0f-a056-287dbcdeb4ca"
+                              },
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "parameters": {
+                                  "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                                  "table": "f8a47cd2-689e-4648-8ef8-139c57303c25",
+                                  "id": "@items('For_each_1')?['ID']"
+                                },
+                                "host": {
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+                                  "operationId": "DeleteItem",
+                                  "connectionName": "shared_sharepointonline_1"
+                                }
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Get_items_1": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "0ecd5090-b58d-4e79-a7e1-688b128be29f"
+                          },
+                          "type": "Foreach"
+                        }
+                      }
+                    },
+                    "expression": {
+                      "and": [
+                        {
+                          "equals": [
+                            "@triggerBody()?['field_7/Value']",
+                            "Yes"
+                          ]
+                        }
+                      ]
+                    },
+                    "metadata": {
+                      "operationMetadataId": "b5d33785-fb1e-4e7f-92c1-e440c3cdfc07"
+                    },
+                    "type": "If"
+                  }
+                },
+                "else": {
+                  "actions": {}
+                },
+                "expression": {
+                  "and": [
+                    {
+                      "equals": [
+                        "@triggerBody()?['Brand/Value']",
+                        "Samsung"
+                      ]
+                    }
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "a1c195c6-9a33-4e6c-86a1-1f2beff14056"
+                },
+                "type": "If"
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@triggerBody()?['Brand/Value']",
+                  "Lenovo"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "1e2cad53-2581-47e8-bf9b-963d1de43f42"
+          },
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}

@@ -1,0 +1,165 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created_or_modified": {
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "80444df9-0b05-40a5-b4fa-b61753e2ca79"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetOnUpdatedItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "5ba64ba1-b645-4b7a-b973-82ed9487bb09"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Condition": {
+          "actions": {
+            "Create_item": {
+              "runAfter": {},
+              "metadata": {
+                "operationMetadataId": "14fd63ad-4b64-42c2-a2cf-b9c037d7c6d5"
+              },
+              "type": "OpenApiConnection",
+              "inputs": {
+                "host": {
+                  "connectionName": "shared_sharepointonline_1",
+                  "operationId": "PostItem",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                },
+                "parameters": {
+                  "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                  "table": "6add284b-4c65-41ec-b4b5-88cef4727fa0",
+                  "item/field_1": "@triggerBody()?['field_1']",
+                  "item/field_2": "@triggerBody()?['field_2']",
+                  "item/PurchaseDate": "@triggerBody()?['PurchaseDate']",
+                  "item/Brand": "@triggerBody()?['Brand']",
+                  "item/Title": "@triggerBody()?['Title']",
+                  "item/field_4/Value": "@triggerBody()?['field_4/Value']",
+                  "item/field_5": "@triggerBody()?['field_5']",
+                  "item/field_6": "@triggerBody()?['field_6']",
+                  "item/field_7/Value": "Yes",
+                  "item/Previousowner": "@triggerBody()?['Previousowner']"
+                },
+                "authentication": "@parameters('$authentication')"
+              }
+            }
+          },
+          "runAfter": {},
+          "else": {
+            "actions": {
+              "Get_items": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "15d88f77-920a-49a2-a1c9-ab7325b7be90"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_sharepointonline_1",
+                    "operationId": "GetItems",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                  },
+                  "parameters": {
+                    "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                    "table": "6add284b-4c65-41ec-b4b5-88cef4727fa0",
+                    "$filter": "Title eq '@{triggerBody()?['Title']}'"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              },
+              "For_each": {
+                "foreach": "@outputs('Get_items')?['body/value']",
+                "actions": {
+                  "Delete_item": {
+                    "runAfter": {},
+                    "metadata": {
+                      "operationMetadataId": "7de4f0cc-1b3d-4e7e-af61-b4e0a94605a8"
+                    },
+                    "type": "OpenApiConnection",
+                    "inputs": {
+                      "host": {
+                        "connectionName": "shared_sharepointonline_1",
+                        "operationId": "DeleteItem",
+                        "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+                      },
+                      "parameters": {
+                        "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+                        "table": "6add284b-4c65-41ec-b4b5-88cef4727fa0",
+                        "id": "@items('For_each')?['ID']"
+                      },
+                      "authentication": "@parameters('$authentication')"
+                    }
+                  }
+                },
+                "runAfter": {
+                  "Get_items": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "b535022f-0ebd-4b20-a6de-35b5194f1581"
+                },
+                "type": "Foreach"
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@triggerBody()?['field_7/Value']",
+                  "Yes"
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "b252bc3d-96ee-48e1-b653-2de0d403bd32"
+          },
+          "type": "If"
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

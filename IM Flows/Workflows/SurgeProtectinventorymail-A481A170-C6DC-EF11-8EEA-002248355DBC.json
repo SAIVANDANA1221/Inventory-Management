@@ -1,0 +1,157 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_office365_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_06ce8"
+        },
+        "api": {
+          "name": "shared_office365"
+        }
+      },
+      "shared_sharepointonline_1": {
+        "runtimeSource": "embedded",
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "api": {
+          "name": "shared_sharepointonline"
+        }
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        },
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created": {
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "ec4815eb-3916-4aeb-8bf1-73bd8cd31076"
+          },
+          "type": "OpenApiConnection",
+          "inputs": {
+            "host": {
+              "connectionName": "shared_sharepointonline_1",
+              "operationId": "GetOnNewItems",
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline"
+            },
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "d4881c2d-5f1f-4e80-b7e8-c51764ffa6d1"
+            },
+            "authentication": "@parameters('$authentication')"
+          }
+        }
+      },
+      "actions": {
+        "Condition": {
+          "actions": {},
+          "runAfter": {
+            "Initialize_variable_2": [
+              "Succeeded"
+            ]
+          },
+          "else": {
+            "actions": {
+              "Set_variable": {
+                "runAfter": {
+                  "Compose": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "81e8b67c-4b29-47bb-aec2-a94e58fe06b9"
+                },
+                "type": "SetVariable",
+                "inputs": {
+                  "name": "Quantity",
+                  "value": "@int(outputs('Compose'))"
+                }
+              },
+              "Compose": {
+                "runAfter": {},
+                "metadata": {
+                  "operationMetadataId": "3c665474-bf75-4bdc-9ca5-f65df9b3b2e2"
+                },
+                "type": "Compose",
+                "inputs": "@triggerBody()?['Quantity']"
+              },
+              "Send_an_email_(V2)_1": {
+                "runAfter": {
+                  "Set_variable": [
+                    "Succeeded"
+                  ]
+                },
+                "metadata": {
+                  "operationMetadataId": "9e393451-9704-49cf-8a3a-71fc120da9bc"
+                },
+                "type": "OpenApiConnection",
+                "inputs": {
+                  "host": {
+                    "connectionName": "shared_office365_1",
+                    "operationId": "SendEmailV2",
+                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365"
+                  },
+                  "parameters": {
+                    "emailMessage/To": "Gaurav.Sharma@nmrk.com",
+                    "emailMessage/Subject": "Surge Protect Inventory Purchase Details",
+                    "emailMessage/Body": "<style>\nbody {\nfont-family: Arial, sans-serif;\nfont-size: 16px;\nline-height: 1.6;\ncolor: #333;\nmargin: 20px;\n}\np {\nmargin: 10px 0;\n}\ntable {\nwidth: 100%;\nborder-collapse: collapse;\nmargin-top: 20px;\n}\ntable, th, td {\nborder: 1px solid #ddd;\n}\nth, td {\npadding: 12px;\ntext-align: left;\n}\nth {\nbackground-color: #f4f4f4;\n}\ntd {\nbackground-color: #fafafa;\n}\n</style>\n\n<p>Hi IT Team,</p>\n\n<p>The following purchase details have been successfully recorded and are provided below:</p>\n\n<table cellpadding=\"5\" cellspacing=\"0\">\n<tbody>\n<tr>\n<th>Purchase Date</th>\n<td>@{triggerBody()?['PurchaseDate']}</td>\n</tr>\n<tr>\n<th>Invoice Number</th>\n<td>@{triggerBody()?['InvoiceNumber']}</td>\n</tr>\n<tr>\n<th>Vendor Name</th>\n<td>@{triggerBody()?['VendorName']}</td>\n</tr>\n<tr>\n<th>Brand</th>\n<td>@{triggerBody()?['Brand']}</td>\n</tr>\n<tr>\n<th>Model</th>\n<td>@{triggerBody()?['Model']}</td>\n</tr>\n<tr>\n<th>Quantity</th>\n<td>@{variables('Quantity')}</td>\n</tr>\n\n\n</tbody>\n</table>\n\n<p>Please ensure this information is updated in your records accordingly. Let me know if you require any further details.</p>",
+                    "emailMessage/Importance": "Normal"
+                  },
+                  "authentication": "@parameters('$authentication')"
+                }
+              }
+            }
+          },
+          "expression": {
+            "and": [
+              {
+                "equals": [
+                  "@triggerBody()?['Quantity']",
+                  ""
+                ]
+              }
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "8ba78024-ea1c-4acd-9f99-39e91deb8369"
+          },
+          "type": "If"
+        },
+        "Initialize_variable_2": {
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "0b284fdb-d268-44a5-a415-d4dc2309bca8"
+          },
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "Quantity",
+                "type": "integer"
+              }
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": ""
+  },
+  "schemaVersion": "1.0.0.0"
+}

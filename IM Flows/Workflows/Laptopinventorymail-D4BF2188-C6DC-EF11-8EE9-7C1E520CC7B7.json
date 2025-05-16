@@ -1,0 +1,150 @@
+{
+  "properties": {
+    "connectionReferences": {
+      "shared_sharepointonline_1": {
+        "api": {
+          "name": "shared_sharepointonline"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedsharepointonline_2138d"
+        },
+        "runtimeSource": "embedded"
+      },
+      "shared_office365_1": {
+        "api": {
+          "name": "shared_office365"
+        },
+        "connection": {
+          "connectionReferenceLogicalName": "new_sharedoffice365_06ce8"
+        },
+        "runtimeSource": "embedded"
+      }
+    },
+    "definition": {
+      "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+      "contentVersion": "1.0.0.0",
+      "parameters": {
+        "$authentication": {
+          "defaultValue": {},
+          "type": "SecureObject"
+        },
+        "$connections": {
+          "defaultValue": {},
+          "type": "Object"
+        }
+      },
+      "triggers": {
+        "When_an_item_is_created": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "4187ff51-06f6-4fcf-a5b2-5edefcebde2e"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "GetOnNewItems",
+              "connectionName": "shared_sharepointonline_1"
+            }
+          },
+          "recurrence": {
+            "interval": 5,
+            "frequency": "Minute"
+          },
+          "splitOn": "@triggerOutputs()?['body/value']",
+          "metadata": {
+            "operationMetadataId": "1dcd384b-78f3-4738-94cb-7bb46edec56c"
+          }
+        }
+      },
+      "actions": {
+        "Get_items": {
+          "type": "OpenApiConnection",
+          "inputs": {
+            "parameters": {
+              "dataset": "https://ngkfcs.sharepoint.com/teams/EmployeeInformation",
+              "table": "4187ff51-06f6-4fcf-a5b2-5edefcebde2e",
+              "$filter": "Title eq null"
+            },
+            "host": {
+              "apiId": "/providers/Microsoft.PowerApps/apis/shared_sharepointonline",
+              "operationId": "GetItems",
+              "connectionName": "shared_sharepointonline_1"
+            }
+          },
+          "runAfter": {},
+          "metadata": {
+            "operationMetadataId": "8c79fb1c-9cee-4e9f-a3c4-de4a76074603"
+          }
+        },
+        "Apply_to_each": {
+          "type": "Foreach",
+          "foreach": "@outputs('Get_items')?['body/value']",
+          "actions": {
+            "Send_an_email_(V2)": {
+              "type": "OpenApiConnection",
+              "inputs": {
+                "parameters": {
+                  "emailMessage/To": "Gaurav.Sharma@nmrk.com;Saivandana.Unukonda@nmrk.com",
+                  "emailMessage/Subject": "Laptop Inventory Purchase Details",
+                  "emailMessage/Body": "<style>\n  body {\n    font-family: Arial, sans-serif;\n    font-size: 16px;\n    line-height: 1.6;\n    color: #333;\n    margin: 20px;\n  }\n  p {\n    margin: 10px 0;\n  }\n  table {\n    width: 100%;\n    border-collapse: collapse;\n    margin-top: 20px;\n  }\n  table, th, td {\n    border: 1px solid #ddd;\n  }\n  th, td {\n    padding: 12px;\n    text-align: left;\n  }\n  th {\n    background-color: #f4f4f4;\n  }\n  td {\n    background-color: #fafafa;\n  }\n</style>\n\n<p>Hi IT Team,</p>\n\n<p>The following purchase details have been successfully recorded and are provided below:</p>\n\n<table cellpadding=\"5\" cellspacing=\"0\">\n  <tbody>\n    <tr>\n      <th>Purchase Date</th>\n      <td>@{item()?['field_1']}</td>\n    </tr>\n    <tr>\n      <th>Invoice Number</th>\n      <td>@{item()?['field_2']}</td>\n    </tr>\n    <tr>\n      <th>Vendor Name</th>\n      <td>@{item()?['field_3']}</td>\n    </tr>\n    <tr>\n      <th>Brand</th>\n      <td>@{item()?['field_4/Value']}</td>\n    </tr>\n    <tr>\n      <th>Model</th>\n      <td>@{item()?['field_5']}</td>\n    </tr>\n<tr>\n      <th>Quantity</th>\n      <td>@{variables('count')}</td>\n    </tr>\n\n    <!-- Serial Numbers Section (Dynamic) -->\n    <tr>\n      <th>Serial Numbers</th>\n      <td>\n        @{if(empty(item()?['MultipleSerialNumbers']), \n           'No serial numbers available.',\n           replace(item()?['MultipleSerialNumbers'], ',', '<br>'))}\n      </td>\n    </tr>\n  </tbody>\n</table>\n\n<p>Please ensure this information is updated in your records accordingly. Let me know if you require any further details.</p>",
+                  "emailMessage/Importance": "Normal"
+                },
+                "host": {
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_office365",
+                  "operationId": "SendEmailV2",
+                  "connectionName": "shared_office365_1"
+                }
+              },
+              "metadata": {
+                "operationMetadataId": "c069ca7f-1fd7-4a9b-b9a1-be51e92e4489"
+              }
+            }
+          },
+          "runAfter": {
+            "Initialize_variable_1": [
+              "Succeeded"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "408ae8a5-bb43-4e8e-9205-e69a3ea00475"
+          }
+        },
+        "Initialize_variable_1": {
+          "type": "InitializeVariable",
+          "inputs": {
+            "variables": [
+              {
+                "name": "count",
+                "type": "integer",
+                "value": "@length(split(triggerBody()?['MultipleSerialNumbers'],';'))"
+              }
+            ]
+          },
+          "runAfter": {
+            "Compose": [
+              "SUCCEEDED"
+            ]
+          },
+          "metadata": {
+            "operationMetadataId": "c69f6147-2c52-457a-ae6a-dd456c59521a"
+          }
+        },
+        "Compose": {
+          "type": "Compose",
+          "inputs": {
+            "@{outputs('Get_items')?['body/value']}": []
+          },
+          "runAfter": {
+            "Get_items": [
+              "Succeeded"
+            ]
+          }
+        }
+      },
+      "outputs": {}
+    },
+    "templateName": null
+  },
+  "schemaVersion": "1.0.0.0"
+}
